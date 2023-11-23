@@ -3,6 +3,7 @@ package accenture.task.BankingProject.service;
 import accenture.task.BankingProject.dao.BankAccountRepository;
 import accenture.task.BankingProject.dao.BankRepository;
 import accenture.task.BankingProject.exception.BankingProjectApplicationValidationException;
+import accenture.task.BankingProject.exception.BankAccountNotFoundException;
 import accenture.task.BankingProject.model.BankAccount;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,9 +27,6 @@ public class BankAccountService {
         return bankAccountRepository.findAll();
     }
 
-//    public BankAccount create(BankAccount bankAccount) {
-//        return bankAccountRepository.save(bankAccount);
-//    }
 
     public BankAccount create(BankAccount bankAccount, Long bankId) {
         var existingBank = bankRepository.findById(bankId)
@@ -39,8 +37,10 @@ public class BankAccountService {
         return bankAccountRepository.save(bankAccount);
     }
     public BankAccount getAccountById(Long accountId) {
-        return bankAccountRepository.findById(accountId).orElse(null);
+        return bankAccountRepository.findById(accountId)
+                .orElseThrow(() -> new BankAccountNotFoundException(accountId));
     }
+
 
 //    public void deposit(BankAccount account, double amount) {
 //        if (amount > 0) {
@@ -75,6 +75,7 @@ public class BankAccountService {
     public void transferOperation(Long accountId1, Long accountId2, Double transferredAmount) {
         BankAccount initialAccount = getAccountById(accountId1);
         BankAccount targetAccount = getAccountById(accountId2);
+
 
         if (transferredAmount > 0 && transferredAmount <= initialAccount.getBalance()) {
             initialAccount.setBalance(initialAccount.getBalance() - transferredAmount);

@@ -1,8 +1,7 @@
 package accenture.task.BankingProject.api;
 
 import accenture.task.BankingProject.api.dto.BankDto;
-import accenture.task.BankingProject.api.dto.BankEntityDto;
-import accenture.task.BankingProject.api.dto.Mapper.BankMapper;
+import accenture.task.BankingProject.exception.BankNotFoundException;
 import accenture.task.BankingProject.model.Bank;
 import accenture.task.BankingProject.model.BankAccount;
 import accenture.task.BankingProject.service.BankService;
@@ -14,11 +13,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static accenture.task.BankingProject.api.dto.Mapper.BankMapper.toBank;
 import static accenture.task.BankingProject.api.dto.Mapper.BankMapper.toBankDto;
-import static java.util.stream.Collectors.toList;
 
 @RestController
 @RequestMapping("/api/v1/banks")
@@ -34,28 +33,53 @@ public class BankController {
 
     @GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE})
     @ResponseBody
-    public List<Bank> getAllBanks() {
-        return bankService.getAllBanks();
+    public ResponseEntity<List<Bank>> getAllBanks() {
+        try {
+            List<Bank> bankList = new ArrayList<>(bankService.getAllBanks());
+
+            if (bankList.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+
+            return new ResponseEntity<>(bankList, HttpStatus.OK);
+        } catch (Exception ex) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-//    @GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE})
-//    @ResponseBody
-//    public ResponseEntity<List<BankEntityDto>> getBanks() {
-//        List<BankEntityDto> bankDtos = bankService.getAllBanks().stream()
-//                .map(BankMapper::toBankEntityDto)
-//                .collect(toList());
-//        return ResponseEntity.ok(bankDtos);
-//    }
+
+    @GetMapping(value = "/{bankId}", produces = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<Bank> getBankById(@PathVariable Long bankId) {
+        Bank bank = bankService.getBankById(bankId);
+
+        if (bank != null) {
+            return new ResponseEntity<>(bank, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
 
     @PostMapping(consumes = {MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<BankDto> createNewBank(@RequestBody BankDto bankDto) {
-        Bank createdBank = bankService.create(toBank(bankDto));
-        return ResponseEntity.ok(toBankDto(createdBank));
+        try {
+            Bank createdBank = bankService.create(toBank(bankDto));
+            return ResponseEntity.ok(toBankDto(createdBank));
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
+
     @GetMapping(value = "/{bankId}/accounts", produces = {MediaType.APPLICATION_JSON_VALUE})
-    public List<BankAccount> getAllAccountsByBankId(@PathVariable Long bankId) {
-        return bankService.getAllAccounts(bankId);
+    public ResponseEntity<List<BankAccount>> getAllAccountsByBankId(@PathVariable Long bankId) {
+        try {
+            List<BankAccount> accounts = bankService.getAllAccounts(bankId);
+            return new ResponseEntity<>(accounts, HttpStatus.OK);
+        } catch (BankNotFoundException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
 //    @GetMapping(value = "/{bankId}/accounts", produces = {MediaType.APPLICATION_JSON_VALUE})

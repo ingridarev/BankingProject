@@ -3,6 +3,8 @@ package accenture.task.BankingProject.api;
 import accenture.task.BankingProject.api.dto.ErrorDto;
 import accenture.task.BankingProject.api.dto.ErrorFieldDto;
 import accenture.task.BankingProject.api.dto.Mapper.ErrorFieldMapper;
+import accenture.task.BankingProject.exception.BankAccountNotFoundException;
+import accenture.task.BankingProject.exception.BankNotFoundException;
 import accenture.task.BankingProject.exception.BankingProjectApplicationServiceDisabledException;
 import accenture.task.BankingProject.exception.BankingProjectApplicationValidationException;
 import org.slf4j.Logger;
@@ -122,5 +124,46 @@ public class ApiExceptionHandler {
     public void handleAllExceptions(Exception exception) {
         logger.error("All Exceptions handler: {}", exception.getMessage());
     }
+
+    @ExceptionHandler(BankNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleBankNotFoundException(HttpServletRequest request, BankNotFoundException bankNotFoundException) {
+        logger.error("BankNotFoundException: {}", bankNotFoundException.getMessage());
+
+        var errorStatus = HttpStatus.NOT_FOUND;
+
+        var errorFields = List.of(
+                new ErrorFieldDto("bankId", "Bank not found", bankNotFoundException.getBankId().toString())
+        );
+
+        var errorDto = new ErrorDto(request.getRequestURL().toString(),
+                errorFields,
+                bankNotFoundException.getMessage(),
+                errorStatus.value(),
+                errorStatus.getReasonPhrase(),
+                request.getRequestURL().toString(),
+                LocalDateTime.now());
+        return ResponseEntity.status(errorStatus).body(errorDto);
+    }
+
+    @ExceptionHandler(BankAccountNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleBankAccountNotFoundException(HttpServletRequest request, BankAccountNotFoundException ex) {
+        logger.error("BankAccountNotFoundException: {}", ex.getMessage());
+
+        var errorStatus = HttpStatus.NOT_FOUND;
+
+        var errorFields = List.of(
+                new ErrorFieldDto("accountId", ex.getMessage(), ex.getAccountId().toString())
+        );
+
+        var errorDto = new ErrorDto(request.getRequestURL().toString(),
+                errorFields,
+                ex.getMessage(),
+                errorStatus.value(),
+                errorStatus.getReasonPhrase(),
+                request.getRequestURL().toString(),
+                LocalDateTime.now());
+        return ResponseEntity.status(errorStatus).body(errorDto);
+    }
+
 
 }
